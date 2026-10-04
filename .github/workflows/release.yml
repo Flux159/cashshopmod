@@ -1,5 +1,11 @@
 name: Build and Release Mod Zip
 
+# Push a tag named after the version in cash-shop-extended/mod.json, e.g. v2.8.0:
+#   git tag v2.8.0 && git push origin v2.8.0
+# This zips the mod folder and attaches it to a GitHub Release for that tag,
+# as cash-shop-extended-v2.8.0.zip -- the name Ragnarok Offline's mod registry
+# looks for (cash-shop-extended-*.zip).
+
 on:
   push:
     tags:
@@ -15,13 +21,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create Zip Archive
+      - name: Read the version from mod.json
+        id: version
         run: |
-          zip -r mcash-shop-extended-v2.7.zip . -x "*.git*" ".github/*"
+          version=$(jq -r .version cash-shop-extended/mod.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match mod.json version $version. Raise the version in cash-shop-extended/mod.json, commit, and tag v$version."
+            exit 1
+          fi
+          echo "zip=cash-shop-extended-v$version.zip" >> "$GITHUB_OUTPUT"
+
+      # Only the mod folder, so the zip has exactly one top-level folder with
+      # mod.json inside it. The app refuses a zip with anything else at the top.
+      - name: Create Zip Archive
+        run: zip -r "${{ steps.version.outputs.zip }}" cash-shop-extended -x '*.DS_Store' '*/__MACOSX/*'
 
       - name: Release Zip to GitHub
         uses: softprops/action-gh-release@v2
         with:
-          files: cash-shop-extended-v2.7.zip
+          files: ${{ steps.version.outputs.zip }}
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

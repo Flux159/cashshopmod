@@ -1,0 +1,60 @@
+// ============================================================================
+// Cash Point Seller - Siz (Sprite: 1_M_SIZ / ID: 62)
+// Coordinates: prontera (148, 193)
+// By: Lil Art
+// ============================================================================
+// Rate: 30,000 Zeny per 1 Cash Point.
+// ============================================================================
+
+prontera,148,193,4	script	Cash Point Seller#cashseller	1_M_SIZ,{
+	mes "[Cash Point Seller]";
+	mes "Hello! I sell Cash Points for Zeny!";
+	mes "Your Balance: ^0055FF" + #CASHPOINTS + "^000000 points.";
+	next;
+
+	switch(select("15 Cash Points (300,000 Zeny)", "150 Cash Points (3,000,000 Zeny)", "1500 Cash Points (30,000,000 Zeny)", "Cancel")) {
+	case 1:
+		.@pts = 15;
+		.@cost = 300000;
+		break;
+
+	case 2:
+		.@pts = 150;
+		.@cost = 3000000;
+		break;
+
+	case 3:
+		.@pts = 1500;
+		.@cost = 30000000;
+		break;
+
+	case 4:
+		mes "[Cash Point Seller]";
+		mes "See you later!";
+		close;
+	}
+
+	if (Zeny < .@cost) {
+		mes "[Cash Point Seller]";
+		mes "You don't have enough Zeny for this package.";
+		close;
+	}
+
+	mes "[Cash Point Seller]";
+	mes "Buy ^0055FF" + .@pts + " Cash Points^000000 for ^0055FF" + callfunc("F_InsertComma", .@cost) + " Zeny^000000?";
+	next;
+	if (select("Yes, buy them:No, thanks") == 2) {
+		mes "[Cash Point Seller]";
+		mes "No problem. See you later!";
+		close;
+	}
+
+	Zeny -= .@cost;
+	#CASHPOINTS += .@pts;
+
+	mes "[Cash Point Seller]";
+	mes "Transaction successful!";
+	mes "Purchased ^0055FF" + .@pts + " Cash Points^000000.";
+	mes "New Balance: ^0055FF" + #CASHPOINTS + "^000000 points.";
+	close;
+}

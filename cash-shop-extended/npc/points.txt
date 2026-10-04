@@ -1,0 +1,124 @@
+// ============================================================================
+// Cash Shop Rewards - Configuration
+// By: Lil Art; Alex Rows
+// ============================================================================
+// Edit only the values in OnInit, then restart Ragnarok Offline.
+// 1 = enabled, 0 = disabled.
+//
+// Cash points and both progress counters use account variables (# prefix).
+// Progress is therefore shared by every character on the same account.
+
+-	script	CashPointRewards	-1,{
+
+OnInit:
+	// Starter welcome reward
+	.StarterEnabled = 1;
+	.StarterPoints = 250;
+
+	// Play-time reward
+	.PlayTimeEnabled = 1;
+	.PlayMinutesPerReward = 10;
+	.PlayTimePoints = 15;
+
+	// Monster-kill reward
+	.KillRewardEnabled = 1;
+	.KillsPerReward = 100;
+	.KillRewardPoints = 15;
+
+	// Maximum automatically earned points per account and calendar day.
+	// Use 0 for no daily limit.
+	.DailyPointCap = 0;
+
+	// Show a chat message whenever points are awarded.
+	.ShowRewardMessages = 1;
+	end;
+
+OnPCLoginEvent:
+	// Grant starter welcome points if not yet claimed on this account
+	if (.StarterEnabled && !#StarterGiftReceived) {
+		#StarterGiftReceived = 1;
+		callsub S_GrantPoints, .StarterPoints, "welcome gift";
+	}
+
+	// Removing the old timer first also makes script reloads safe.
+	deltimer "CashPointRewards::OnPlayMinute";
+	if (.PlayTimeEnabled && .PlayMinutesPerReward > 0 && .PlayTimePoints > 0)
+		addtimer 60000, "CashPointRewards::OnPlayMinute";
+	end;
+
+OnPlayMinute:
+	if (!.PlayTimeEnabled || .PlayMinutesPerReward <= 0 || .PlayTimePoints <= 0)
+		end;
+
+	#CashPlayMinutes++;
+	while (#CashPlayMinutes >= .PlayMinutesPerReward) {
+		#CashPlayMinutes -= .PlayMinutesPerReward;
+		callsub S_GrantPoints, .PlayTimePoints, "play time";
+	}
+
+	addtimer 60000, "CashPointRewards::OnPlayMinute";
+	end;
+
+OnNPCKillEvent:
+	if (!.KillRewardEnabled || .KillsPerReward <= 0 || .KillRewardPoints <= 0)
+		end;
+
+	#CashMonsterKills++;
+	while (#CashMonsterKills >= .KillsPerReward) {
+		#CashMonsterKills -= .KillsPerReward;
+		callsub S_GrantPoints, .KillRewardPoints, "monster kills";
+	}
+	end;
+
+S_GrantPoints:
+	.@amount = getarg(0);
+	.@reason$ = getarg(1);
+
+	// Reset the daily counter when the local calendar date changes.
+	.@today = gettime(7) * 10000 + gettime(6) * 100 + gettime(5);
+	if (#CashRewardDate != .@today) {
+		#CashRewardDate = .@today;
+		#CashTodayPoints = 0;
+	}
+
+	if (.DailyPointCap > 0) {
+		.@remaining = .DailyPointCap - #CashTodayPoints;
+		if (.@remaining <= 0)
+			return;
+		if (.@amount > .@remaining)
+			.@amount = .@remaining;
+	}
+
+	#CASHPOINTS += .@amount;
+	#CashTodayPoints += .@amount;
+	if (.ShowRewardMessages) {
+		// Send through this invisible NPC instead of dispbottom. roBrowser displays
+		// dispbottom as the player's own speech and adds an overhead chat bubble.
+		// Since CashPointRewards has no visible entity, this stays in chat only.
+		npctalk "Cash Shop: +" + .@amount + " points (" + .@reason$ + "). Balance: " + #CASHPOINTS + ".", "CashPointRewards", bc_self, 0x70D5FF;
+	}
+	return;
+}
+
+// Status NPC. This replaces the old NPC that handed out 500 free test points.
+prontera,143,125,4	script	Cash Points#cash	4_F_KAFRA6,{
+	mes "[Cash Points]";
+	mes "Balance: ^0055FF" + #CASHPOINTS + "^000000 points.";
+	next;
+
+	mes "[Cash Points]";
+	if (getvariableofnpc(.PlayTimeEnabled, "CashPointRewards")) {
+		mes "Play time: " + #CashPlayMinutes + " / " + getvariableofnpc(.PlayMinutesPerReward, "CashPointRewards") + " minutes";
+		mes "Reward: " + getvariableofnpc(.PlayTimePoints, "CashPointRewards") + " points";
+	} else {
+		mes "Play-time rewards: disabled";
+	}
+	mes " ";
+	if (getvariableofnpc(.KillRewardEnabled, "CashPointRewards")) {
+		mes "Monster kills: " + #CashMonsterKills + " / " + getvariableofnpc(.KillsPerReward, "CashPointRewards");
+		mes "Reward: " + getvariableofnpc(.KillRewardPoints, "CashPointRewards") + " points";
+	} else {
+		mes "Monster-kill rewards: disabled";
+	}
+	close;
+}

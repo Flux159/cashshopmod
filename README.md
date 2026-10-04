@@ -1,5 +1,5 @@
 # cashshopmod
-# 🗡️ Ragnarok Online Custom Mod
+# 🗡️ iRO-based Custom Cash Shop Mod
 
 A custom mod for Ragnarok Online designed to extend server gameplay with custom scripts, NPCs, and database configurations.
 
@@ -7,8 +7,8 @@ A custom mod for Ragnarok Online designed to extend server gameplay with custom 
 
 ## 🌟 Features
 
-- **Custom NPC Scripts:** Adds new utility and quest NPCs to the server.
-- **Database Tweaks:** Updated item/mob definitions for custom balance and functionality.
+- **Custom NPC Scripts:** Adds new cash points and gacha machine NPCs to the server.
+- **Database Tweaks:** Updated item definitions for custom balance and functionality.
 - **Easy Integration:** Structured for direct loading via mod managers or manual script inclusion.
 
 ---

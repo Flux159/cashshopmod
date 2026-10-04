@@ -1,15 +1,19 @@
 name: Build and Release Mod Zip
 
-# Push a tag named after the version in cash-shop-extended/mod.json, e.g. v2.8.0:
-#   git tag v2.8.0 && git push origin v2.8.0
-# This zips the mod folder and attaches it to a GitHub Release for that tag,
-# as cash-shop-extended-v2.8.0.zip -- the name Ragnarok Offline's mod registry
-# looks for (cash-shop-extended-*.zip).
+# Runs when a release is published, from the GitHub website or the command line,
+# and attaches the mod as cash-shop-extended-v<version>.zip -- the name Ragnarok
+# Offline's mod registry looks for (cash-shop-extended-*.zip).
+#
+# On GitHub: raise "version" in cash-shop-extended/mod.json (e.g. 2.8.0) and
+# commit, then Releases -> Draft a new release -> Choose a tag -> type v2.8.0 ->
+# "Create new tag: v2.8.0 on publish" -> add a title and notes -> Publish release.
+# The zip appears on the release a minute or so later.
+#
+# From the command line, the same thing: gh release create v2.8.0 --generate-notes
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -25,8 +29,9 @@ jobs:
         id: version
         run: |
           version=$(jq -r .version cash-shop-extended/mod.json)
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match mod.json version $version. Raise the version in cash-shop-extended/mod.json, commit, and tag v$version."
+          tag="${{ github.event.release.tag_name }}"
+          if [ "v$version" != "$tag" ]; then
+            echo "::error::Release tag $tag does not match mod.json version $version. Raise the version in cash-shop-extended/mod.json and commit, then delete this release and its tag and publish one tagged v$version."
             exit 1
           fi
           echo "zip=cash-shop-extended-v$version.zip" >> "$GITHUB_OUTPUT"
@@ -40,6 +45,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.version.outputs.zip }}
+          tag_name: ${{ github.event.release.tag_name }}
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

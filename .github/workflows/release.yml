@@ -1,0 +1,27 @@
+name: Build and Release Mod Zip
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Zip Archive
+        run: |
+          zip -r mcash-shop-extended-v2.7.zip . -x "*.git*" ".github/*"
+
+      - name: Release Zip to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: cash-shop-extended-v2.7.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
